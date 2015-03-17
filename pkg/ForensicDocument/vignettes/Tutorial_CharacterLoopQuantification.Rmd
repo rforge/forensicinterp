@@ -73,36 +73,7 @@ We give a more detailed description of this method:
 3. Function $R(\theta)$ are resampled for `n.samp` $\theta$ values. That is, for the values $\theta=\frac{2\pi n}{n.samp+1}, \, n=0,\dots,n.samp-1$. 
 4. Selected Fourier parameters are extranted from the signal $R[\theta]$ (using the `fft` method from `stats`).
 
-```{r, fig.cap="(__Figure 1__ character O binary, skelton, and re-sampling image", echo=FALSE}
-par(mfrow = c(1,3))
-file = system.file("extdata", "fig-O.png", package = "ForensicDocument")
-image = ForensicDocument:::ImageRead(file, character_pixel = 0)
-skel_image = ForensicDocument:::ImageThin(image)
-image(t(image), ylim = c(1, 0), asp = 1, col  = c("white", "black"),
-      ylab = "height", xlab = "width", xaxt = "n", yaxt = "n", 
-      main = "black & white character 'o'",
-      mgp = c(1,1,0), 
-      mar = par("mar")-c(2,2,0,0))
-image(t(skel_image), ylim = c(1, 0), asp = 1, col  = c("white", "black"),
-      ylab = "height", xlab = "width", xaxt = "n", yaxt = "n", 
-      main = "character 'o' skeleton",
-      mgp = c(1,1,0), 
-      mar = par("mar")-c(2,2,0,0))
-n.samp = 14
-seq = seq(from = 0, to = 2*pi, length = n.samp+1)[-(n.samp+1)]
-radius = ForensicDocument:::ImageGetClosedShapeRadius(skel_image, seq)
-xy = ForensicDocument:::ImageGetPoints(image = skel_image, black = 1)
-bary = colMeans(xy) + c(1,1)
-image(t(skel_image), ylim = c(1, 0), asp = 1, col  = c("white", "black"),
-      ylab = "height", xlab = "width", xaxt = "n", yaxt = "n", 
-      main = expression(paste(R(theta), " for n.samp=8", )),
-      mgp = c(1,1,0), 
-      mar = par("mar")-c(2,2,0,0))
-X = matrix( c(rep(bary["x"], n.samp), bary["x"]+cos(seq)*radius), ncol = 2)/300
-Y = matrix( c(rep(bary["y"], n.samp), bary["y"]+sin(seq)*radius), ncol = 2)/300
-for(i in 1:n.samp) lines(X[i,],Y[i,], lwd = 2, col = "red")
 
-```
 
 
 
@@ -140,7 +111,7 @@ result = ExtractFourier(files = files,
                         n.samp = 128, 
                         verbose = FALSE, 
                         output = NULL,
-                        character_pixel = 1)
+                        character_pixel = 0)
 result
 ```
 
