@@ -75,7 +75,7 @@ void ImageThin(int *matrix, int *nrow, int *ncol)
 		index = 0;
 		for(int i = 0; i < nr; ++i) {
 		for(int j = 0; j < nc; ++j) {
-			if(destination[index] == 1 & (matrix[index + 1] == 1 & matrix[index - 1] == 0))
+			if(destination[index] == 1 && (matrix[index + 1] == 1 && matrix[index - 1] == 0))
 			{
 				if(GetConnectivity(destination, index, nc, nr) == 1)
 				{
@@ -92,7 +92,7 @@ void ImageThin(int *matrix, int *nrow, int *ncol)
 		index = 0;
 		for(int i = 0; i < nr; ++i) {
 		for(int j = 0; j < nc; ++j, ++index) {
-			if(destination[index] == 1 & (matrix[index + nr] == 0 & matrix[index - nr] == 1))
+			if(destination[index] == 1 && (matrix[index + nr] == 0 && matrix[index - nr] == 1))
 			{
 				if(GetConnectivity(destination, index, nc, nr) == 1)
 				{
@@ -106,7 +106,7 @@ void ImageThin(int *matrix, int *nrow, int *ncol)
 		index = 0;
 		for(int i = 0; i < nr; ++i) {
 		for(int j = 0; j < nc; ++j, ++index) {
-			if(destination[index] == 1 & (matrix[index + nr] == 1 & matrix[index - nr] == 0))
+			if(destination[index] == 1 && (matrix[index + nr] == 1 && matrix[index - nr] == 0))
 			{
 				if(GetConnectivity(destination, index, nc, nr) == 1)
 				{
@@ -122,7 +122,7 @@ void ImageThin(int *matrix, int *nrow, int *ncol)
 		index = 0;
 		for(int i = 0; i < nr; ++i) {
 		for(int j = 0; j < nc; ++j, ++index) {
-			if(destination[index] == 1 & (matrix[index + 1] == 0 & matrix[index - 1] == 1))
+			if(destination[index] == 1 && (matrix[index + 1] == 0 && matrix[index - 1] == 1))
 			{
 				if(GetConnectivity(destination, index, nc, nr) == 1)
 				{
