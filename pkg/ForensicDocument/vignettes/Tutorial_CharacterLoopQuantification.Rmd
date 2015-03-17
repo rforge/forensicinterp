@@ -1,0 +1,301 @@
+---
+title: "Quantification and evaluation of handwritten characters loops"
+author: "Alexandre Thiery"
+date: "16/03/2015"
+output:
+  html_document:
+    fig_caption: yes
+bibliography: "../REFERENCES.bib"
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown} 
+  %\VignetteIndexEntry{Quantification and evaluation of handwritten characters loops} 
+  \usepackage[utf8]{inputenc}
+---
+
+
+<style type="text/css">
+body {
+    max: 800px;
+    margin: 1em auto;
+    max-width: 1200px;
+}
+hr {
+  background-color: black;
+  height:10px;
+}
+code < 
+</style>
+
+
+
+<a name="top"></a> 
+
+# Introduction
+
+-----
+
+This tutorial presents toos for quantification and evaluation of loops contained in character, following work from @marquis2005 and @bozza2008. 
+
+The fourier quantification method and likelihood statistical evaluation are respectively implemented in `ExtractFourier` and `TwoLevelLR` methods.
+
+
+* <a href="#chapter1">Loop quantification</a>
+    * <a href="#chapter1_param">Parameters</a>
+    * <a href="#chapter1_examples">Example</a>
+* <a href="#chapter2">Statistical evaluation</a>
+    * <a href="#chapter2_param">Parameters evaluation</a>
+    * <a href="#chapter2_examples">Examples evaluation</a>
+    * <a href="#chapter2_examples1">Examples $H_d$ true</a>
+    * <a href="#chapter2_examples2">Examples $H_p$ true</a>
+* <a href="#refs">References</a>
+    
+    
+
+```{r load-package}
+suppressPackageStartupMessages(library(ForensicDocument))
+```
+
+ 
+# Loop quantification
+
+<a name="chapter1"></a> 
+<a href="#top">_back to top_</a>
+
+-----
+
+
+The loop quantification method, for contained in handwritten characters as described in @marquis2005, is implemented in the `ExtractFourier` method. In short, binary character images are skeletonized and quantified with a function $R(\theta)$, where $R(\theta)$ is the distance of the character skeleton to its barycenter at the angke $\theta$.
+
+We give a more detailed description of this method:
+
+1. The algoritm used for the skeletonisation process is based on the one proposed by @stentiford1983. It has been modified for the particular case of closed loop by removing the end point condition, this tweek avoids to perform prunning on the resulting skeleton (see @stentiford1983 for further details).
+2. Skeletons (or loop) are parametrised by a discrete function $R(\theta)$, representing the length of a line joining a point of the contour to the barycenter. $\theta$ being the angle made by this line with the horizontal axis, with $0 \leq \theta < 2\times\pi$.
+3. Function $R(\theta)$ are resampled for `n.samp` $\theta$ values. That is, for the values $\theta=\frac{2\pi n}{n.samp+1}, \, n=0,\dots,n.samp-1$. 
+4. Selected Fourier parameters are extranted from the signal $R[\theta]$ (using the `fft` method from `stats`).
+
+```{r, fig.cap="(__Figure 1__ character O binary, skelton, and re-sampling image", echo=FALSE}
+par(mfrow = c(1,3))
+file = system.file("extdata", "fig-O.png", package = "ForensicDocument")
+image = ForensicDocument:::ImageRead(file, character_pixel = 0)
+skel_image = ForensicDocument:::ImageThin(image)
+image(t(image), ylim = c(1, 0), asp = 1, col  = c("white", "black"),
+      ylab = "height", xlab = "width", xaxt = "n", yaxt = "n", 
+      main = "black & white character 'o'",
+      mgp = c(1,1,0), 
+      mar = par("mar")-c(2,2,0,0))
+image(t(skel_image), ylim = c(1, 0), asp = 1, col  = c("white", "black"),
+      ylab = "height", xlab = "width", xaxt = "n", yaxt = "n", 
+      main = "character 'o' skeleton",
+      mgp = c(1,1,0), 
+      mar = par("mar")-c(2,2,0,0))
+n.samp = 14
+seq = seq(from = 0, to = 2*pi, length = n.samp+1)[-(n.samp+1)]
+radius = ForensicDocument:::ImageGetClosedShapeRadius(skel_image, seq)
+xy = ForensicDocument:::ImageGetPoints(image = skel_image, black = 1)
+bary = colMeans(xy) + c(1,1)
+image(t(skel_image), ylim = c(1, 0), asp = 1, col  = c("white", "black"),
+      ylab = "height", xlab = "width", xaxt = "n", yaxt = "n", 
+      main = expression(paste(R(theta), " for n.samp=8", )),
+      mgp = c(1,1,0), 
+      mar = par("mar")-c(2,2,0,0))
+X = matrix( c(rep(bary["x"], n.samp), bary["x"]+cos(seq)*radius), ncol = 2)/300
+Y = matrix( c(rep(bary["y"], n.samp), bary["y"]+sin(seq)*radius), ncol = 2)/300
+for(i in 1:n.samp) lines(X[i,],Y[i,], lwd = 2, col = "red")
+
+```
+
+
+
+#### Parameters
+
+<a name="chapter1_param"></a> 
+<a href="#top">_back to top_</a>
+
+The parameters for this method are:
+
+* `files`, a vector of string specifying the images files to analyse. There is only one supported file format : the __png__ file format, using the `png` package.
+* `n.samp`, a integer specifying the loops' resampling size. The default resampling size is `n.samp=128`.
+* `n.fourier`, a integer specifying the number of fourier harmonics to extract (n.fourier < n.samp).
+* `skeletonize`, a logical value (`TRUE` or `FALSE`) indicating if character images should be skeletonized. Default is `TRUE`.
+* `character_pixel`, a integer value (`0` or `1`), indicating indicating which pixel value is from the character, the other being the background.
+* `output`, a string specifying the name of the output file.
+    * If no output file is specified (when the argument `output = NULL`, or when it is not assigned), the method will return a list () of table containing the `n.fourier` first fourier parameters $a_n$ and $b_n$.
+    * If the output file is specified, results will be written in a _csv_ type file with a tabulation delimiter ('_\\t_'), and the method will a `NULL` value.  
+* `verbose` a logical value, indicating if progress is to be printed on the console.
+
+#### Example
+
+<a name="chapter1_examples"></a> 
+<a href="#top">_back to top_</a>
+
+In this example, we use the binarised handwritten character o (\emph{fig-O.png} file supplied in the package). The character image is not that is not sketonized `skeletonize=TRUE`.  
+
+We use a sampling size of 128 (`n.samp=128`) with 7 fourier harmonics (`n.fourier=6+1`) as in @marquis2005. We will get the ouput as a `data.fame`, therefore `ouput=NULL`. The verbose option is set to `FALSE`.
+In this case, the method `ExtractFourier` is used as follows:
+
+```{r}
+files = system.file("extdata", "fig-O.png", package = "ForensicDocument")
+result = ExtractFourier(files = files, 
+                        n.fourier = 7, 
+                        n.samp = 128, 
+                        verbose = FALSE, 
+                        output = NULL,
+                        character_pixel = 1)
+result
+```
+
+As stated above, the `result` object is a `list` of length `length(files)`. In this particular case, there is only one input file, thus `result` is a list of length 1.
+
+```{r result-print, echo=FALSE, eval=TRUE}
+exp = c("typeof(result)", "length(result) == length(files)", "names(result) == files")
+for(e in exp) cat(sprintf("%s : %s\n", e, eval(parse(text = e))))
+```
+
+
+# Statistical Evaluation 
+
+<a name="chapter2"></a> 
+<a href="#top">_back to top_</a>
+
+-----
+
+In forensic science, the evidence $y$ is usually interpreted through the computation of a likelihood ratio:
+$$LR = \frac{f(y|H_p)}{f(y|H_d)} $$,
+Where
+
+* $H_p$: is the prosection hypthosesis;
+* $H_d$: is the defense hypothesis.
+
+In the context of handwritten expertise suppose that: (i) an anonymous letter (_i.e._ the _questioned document_) is available for comparative analysis, and (ii) written material from a suspect is selected for comparative purposes (_i.e._ the _reference document_. For the compuation of the likelihood ratio, we consider the following propositions of interest:
+
+* $H_p$: the author of the _reference_ document is the author of the _questioned_ document;
+* $H_d$: the author of the _reference_ document is not the author of the _questioned_ document.
+
+
+In this tutorial and package, the proposed evaluation two-level likelihood ratio is based on the one developed by @bozza2008. It allows to take into account the within- and between-writer variability. The evidence $y$, namely the fourier parameters is supposed to follow a multivariate normal density with unknown mean vector and covariance matrix:
+$$ y \sim \mathcal{M}\mu,W) $$,
+$$ W^{-1} \sim \mathcal{IW}(U,n_w) $$,
+$$ \mu \sim \mathcal{M}(\theta,B) $$.
+Where $B$ and $U$ are the within and between writer covariance matrices. 
+
+The likelihood-ratio is comupted using the `TwoLeveLR` method, and the background parameters ($\mu$, $B$ and $U$) can be computed using the `TwoLeveLR_Background`
+
+
+#### Parameters
+
+<a name="chapter2_param"></a> 
+<a href="#top">_back to top_</a>
+
+The parameters for `TwoLevelLR` method are:
+
+* `data1`, as data.frame object, the measurements from the 'reference' material.
+* `data2`, as data.frame object, the measurements from the 'reference' material.
+* `background`, a list containing the background parameters (overall and group means, within- and between group covariances matrice). This list can be ontained using the `TwoLevelLR_Background` method.
+* `n.iter`, a integer value giving the number of MCMC iterations. Default is `11000`.
+* `n.burnin`, a integer value giving the number of burn-in iterations. Default is `1000`.
+* `nw`, a integer value giving the degrees of freedom for the inverse Wishart distribution. Considering p variables in the data, nw must be $> 2\times p+4$.
+
+Similarly, parameters for `TwoLevelLR_Background` are:
+
+* `data`, a $n \times p$ numeric matrix, with $p \geq q\times 2$. The background data containing $n$ measurements on $p$ variables.
+* `fac`, a factor of length $p$, indicating the 'population' of each measurement. In our case, the writer.
+
+#### Examples
+
+<a name="chapter2_examples"></a>
+<a href="#top">_back to top_</a>
+
+In the following examples, we will use the `characterO` dataset. It contains the extracted Fourier (`n.fourier = 4`) parameters from 554 handwritten character loops, written by 11 writers. It is a subset of the data collected by @marquis2006. For more information on this dataset, see `?characterO`.For other applications of this methodologie, see @marquis2011a and @taroni2012.
+
+```{r data-o}
+data(characterO)
+```
+
+In both examples, number of iterations and _burn in_ iterations for the MCMC chain and set to 110 and 10. The inverse Wishart distribution degree of freedom `nw=50`, as in @bozza2008. 
+```{r lr-param}
+n.iter = 110
+n.burnin = 10
+nw = 50
+```
+
+##### Example 1: $H_p$ true
+
+<a name="chapter2_examples1"></a>
+<a href="#top">_back to top_</a>
+
+We present the case were the _questioned_ and _reference_ documents are written by the same author: writer 1 (writer 1 has a total of `r sum(characterO$info$writer == 1)` characters). 
+
+In this example we use the: 
+* for the _reference_ document (`data_reference`), the parameters extracted from the first 23 characters of writer 1;
+* for the _questioned_ document (`data_questioned`), the parameters extracted from the last 23 characters of writer 1;
+* the background parameters (`background`), are computed using the `TwoLevelLR_Background` method with the remaining 10 writers.
+
+```{r}
+# reference & questioned
+data_reference = subset(characterO$measurements[,-1], 
+                        subset = (characterO$info$writer == 1))[1:23,]
+data_questioned = subset(characterO$measurements[,-1], 
+                         subset = (characterO$info$writer == 1))[-(1:23),]
+# background
+subset = characterO$info$writer != 1
+data_back = subset(characterO$measurements[,-1], 
+                   subset = subset)
+background = TwoLevelLR_Background(data_back, 
+                                   fac = as.factor(characterO$info$writer[subset]))
+
+```
+
+The method `TwoLevelLR` is used as follows:
+
+```{r lr-hp, eval=TRUE}
+LLR = TwoLevelLR(data1 = data_reference,  
+                data2 = data_questioned,
+                background = background, 
+                n.iter = n.iter, n.burnin = n.burnin,
+                nw = nw)
+LLR
+```
+
+The result object `LLR` is the numeric value of the log-likelihood ratio: $LLR = log(f(y|H_p))-log(f(y|H_d))$. Here the $LLR$ is positive (`r LLR`), suggesting that $H_p$ is true (_i.e._ the author of the reference document is the author of the questioned document).
+
+
+##### Example 2: $H_d$ true
+
+<a name="chapter2_examples2"></a>
+<a href="#top">_back to top_</a>
+
+Here, we present the case were the _questioned_ and _reference_ documents are written by different authors: writer 1 and writer 2:
+
+* for the reference document (`data1`), the parameters extracted from writer 1 (first 20 characters);
+* for the questioned document (`data2`), the parameters extracted from writer 2 (first 20 characters);
+* the background parameters (`background`), are computed using the `TwoLevelLR_Background` method with the remaining 9 writers
+
+```{r}
+# reference & questioned
+data_reference = subset(characterO$measurements[,-1], subset = characterO$info$writer == 1)[1:20,]
+data_questioned = subset(characterO$measurements[,-1], subset = characterO$info$writer == 2)[1:20,]
+subset = characterO$info$writer > 2
+# background
+data_back = subset(characterO$measurements[,-1], subset = subset)
+background = TwoLevelLR_Background(data_back, fac = as.factor(characterO$info$writer[subset]))
+```
+The method `TwoLevelLR` is used as follows:
+
+```{r lr-hd, eval=TRUE}
+LLR = TwoLevelLR(data1 = data_reference,  
+                data2 = data_questioned,
+                background = background, 
+                n.iter = n.iter, n.burnin = n.burnin,
+                nw = nw)
+LLR
+```
+
+Here the $LLR$ is negative (`r LLR`), suggesting that $H_d$ is true (_i.e._ the author of the reference document is not the author of the questioned document).
+
+------
+
+# References
+
+<a name="refs"></a> 
+
+_References cited in this tutorial_

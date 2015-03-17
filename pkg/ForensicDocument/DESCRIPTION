@@ -1,0 +1,18 @@
+Package: ForensicDocument
+Type: Package
+Title: Quantification and evaluation tools for forensic document examiners
+Version: 0.99.3
+Date: 2015-03-02
+Author: Alexandre Thiery, Silvia Bozza
+Maintainer: Alexandre Thiery <alexandre.thiery@unil.ch>
+Description: This package provides operational and useable methods and techniques for the analysis of handwriting, notably quantification of characters' shape and (ii) rigurous probabilistic inferntial procedures for coherent assesment of handwriting evidence. This package is developed in the School of Forensic Science - University of Lausanne.
+Depends:
+	mvtnorm,
+	MCMCpack,
+	png
+Suggests:
+    knitr,
+    rmarkdown,
+    methods
+VignetteBuilder: knitr
+License: GPL
